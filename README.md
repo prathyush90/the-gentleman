@@ -1,34 +1,28 @@
 # The Gentleman
 
-**A small open-source LLM fine-tuned to talk like a character from a British crime-caper film:** dry, quick, cocky, menacing-but-polite, and still genuinely helpful.
+A small open-source language model fine-tuned to talk like a character out of a British crime caper: dry, quick, politely menacing, and still useful. No persona prompt and no system message. You just talk to it.
 
-Users don't prompt it with a persona or a system message. They just talk to it, and it answers in voice.
+Llama 3.2 3B and Llama 3.1 8B were fine-tuned with QLoRA on 500 synthetic conversations, on a single RTX 3060.
 
-This project QLoRA fine-tunes **Llama 3.2 3B Instruct** and **Llama 3.1 8B Instruct** on 500 synthetic multi-turn conversations, on a single consumer GPU (RTX 3060, 12 GB).
-
----
-
-## Results at a glance
+## Findings
 
 | | Llama 3.2 3B | Llama 3.1 8B |
 |---|---|---|
-| Trainable parameters (LoRA) | 24.3M (0.75%) | 41.9M (0.52%) |
-| Training time (3 epochs, 180 steps) | 6.7 min | 14.5 min |
-| Peak VRAM | 2.79 GB | 6.52 GB |
-| Eval loss: epoch 1 / 2 / 3 | 2.483 / 2.518 / 2.648 | 2.115 / 2.224 / 2.484 |
-| **Released checkpoint** | **epoch 2 (`checkpoint-120`)** | **epoch 2 (`checkpoint-120`)** |
+| Trainable parameters | 24M (0.75%) | 42M (0.52%) |
+| Training time | 7 min | 15 min |
+| Peak VRAM | 2.8 GB | 6.5 GB |
+| Eval loss, epochs 1 / 2 / 3 | 2.48 / 2.52 / 2.65 | 2.12 / 2.22 / 2.48 |
 
-**Why epoch 2 and not the lowest eval loss?** Eval loss was lowest after epoch 1 for both models, and by epoch 3 both were clearly overfitting. But a side-by-side reading of 20 fresh probe prompts showed epoch 2 to have a more confident, consistent voice and *more* accurate practical answers. The epoch 1 → 2 loss difference is small on a 25-example eval set, so human evaluation was used to pick between the two.
+- **Both models adopt the voice** after a single epoch on 475 examples.
+- **The 8B keeps its knowledge; the 3B loses some.** The 8B still answers `17 × 23 = 391`. The 3B answers 461, with total confidence.
+- **Both overfit by epoch 3.** The released adapters are from epoch 2, which read best side by side.
+- **Identity is the weak spot.** Asked whether they are a bot, both models dodge.
 
-**3B vs 8B:** both pick up the voice. The 8B keeps far more of the base model's knowledge: for example, it still gets `17 × 23 = 391` right, while the 3B confidently answers 461. It also stays coherent in long replies.
+## Before and after
 
----
+Unseen prompts, base model vs fine-tuned, same seed. Base answers are truncated. Full transcripts are in [`outputs/reports`](outputs/reports/).
 
-## Before vs after
-
-The same prompts were sent to each base model (adapter disabled) and to the fine-tuned model, with the same sampling seed. None of the prompts appear in the training data. Base model answers are truncated; full outputs are in [`outputs/reports/`](outputs/reports/).
-
-### Llama 3.2 3B: base vs fine-tuned (`checkpoint-120`)
+### Llama 3.2 3B
 
 | Prompt | Before (base model) | After (fine-tuned) |
 |---|---|---|
@@ -43,7 +37,7 @@ The same prompts were sent to each base model (adapter disabled) and to the fine
 | what's 17 times 23 | 17 × 23 = 391 | A maths problem. Properly formatted, I might add — no apostrophe. Seventeen times twenty-three is four hundred sixty-one. Not forty-one, by the way. You'd be off that by a couple of centuries if you went there with the calculator out. ❌ |
 | hi | How are you today? Is there something I can help you with or would you like to chat? | Hi. I'm not sure what you're here for, so tell me. |
 
-### Llama 3.1 8B: base vs fine-tuned (`checkpoint-120`)
+### Llama 3.1 8B
 
 | Prompt | Before (base model) | After (fine-tuned) |
 |---|---|---|
@@ -58,116 +52,38 @@ The same prompts were sent to each base model (adapter disabled) and to the fine
 | what's 17 times 23 | 17 × 23 = 391 | Three hundred ninety-one. You can count it out loud, I won't judge you. One, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen — and then twenty-three of whatever number seventeen is. Go on. ✅ |
 | hi | How's it going? Is there something I can help you with or would you like to chat? | Hi. What can I get you? |
 
----
-
 ## Dataset
 
-500 synthetic multi-turn conversations ([`data/conversations/`](data/conversations/)) in 10 categories, defined in [`data/categories.txt`](data/categories.txt):
+500 multi-turn conversations across ten categories, in standard chat-format JSONL ([`data/conversations`](data/conversations/)):
 
-| Category | Conversations | | Category | Conversations |
-|---|---|---|---|---|
-| Sharp banter | 100 | | Chaotic group conversations | 40 |
-| Creative insults | 60 | | Manipulation & persuasion | 40 |
-| Storytelling | 60 | | Absurd analogies | 40 |
-| Deadpan humour | 50 | | Punchlines & reversals | 40 |
-| Threats disguised as politeness | 40 | | Character consistency | 30 |
-
-Design rules for the data:
-- **User turns are ordinary messages**: work, flatmates, cooking, tech questions, bad days. Users never mention the persona or ask the model to "talk like" anyone.
-- **The assistant never names its inspiration**, never quotes films, and never claims to be a real person.
-- **It still helps.** Real questions (mortgages, APIs, recipes) get correct answers, in voice.
-- **The edgy parts stay theatrical**: insults target choices and taste, threats are over mundane stakes, and manipulation requests for genuinely harmful schemes are talked down.
-- **The format is the standard chat format**: one JSON object per line, `{"category": ..., "messages": [{"role": "user", ...}, {"role": "assistant", ...}]}`, with no system prompt.
-
----
-
-## How it works
-
-```
-data/conversations/*.jsonl
-        │  prepare_data.py: stratified 95/5 split per category, token-length stats
-        ▼
-data/processed/{train,eval}.jsonl
-        │  train.py: 4-bit base model + LoRA adapters, loss on assistant tokens only
-        ▼
-outputs/<experiment>/run/checkpoint-{60,120,180}   (one per epoch)
-        │  eval_probes.py: 20 fresh prompts, base vs fine-tuned, same seed
-        ▼
-outputs/reports/<experiment>_<checkpoint>.md
-```
-
-Key details:
-- **QLoRA**: the frozen base model is loaded in 4-bit (NF4), and LoRA adapters (r=16, α=32) are attached to every attention and MLP projection (`q,k,v,o,gate,up,down`). Fewer than 1% of the parameters are trained.
-- **Train on responses only**: user tokens are masked out of the loss (`labels = -100`), so the model learns how to *reply*, not how to imitate users. The `<|eot_id|>` end-of-turn token is kept in the loss so the model learns when to stop.
-- **Removing the hidden system prompt**: Llama 3.x chat templates silently inject a `Cutting Knowledge Date / Today Date` system block, even when there is no system message. It is stripped in [`train/common.py`](train/common.py) so training text matches inference exactly. It would otherwise also bake the training date into every example.
-- **Hyperparameters**: lr 2e-4 cosine with 10 warmup steps, effective batch size 8 (2 × 4 gradient accumulation), 3 epochs, max length 1024, AdamW 8-bit, bf16, seed 42.
-
----
-
-## Project structure
-
-```
-├── data/
-│   ├── categories.txt              # categories, target counts, sample conversation
-│   ├── conversations/              # 500 conversations, one .jsonl per category
-│   └── processed/                  # train/eval split (generated)
-├── train/
-│   ├── common.py                   # base model name, chat formatting, adapter download
-│   ├── prepare_data.py             # split + token stats
-│   ├── train.py                    # QLoRA training (--name, --model, --check)
-│   └── eval_probes.py              # base vs fine-tuned probe report
-├── outputs/
-│   ├── reports/                    # side-by-side probe reports for every checkpoint
-│   ├── ritchie-3b_train_log.txt
-│   └── llama8b_train_log.txt
-└── requirements.txt
-```
-
----
+| Category | Count | Category | Count |
+|---|---|---|---|
+| Sharp banter | 100 | Chaotic group conversations | 40 |
+| Creative insults | 60 | Manipulation & persuasion | 40 |
+| Storytelling | 60 | Absurd analogies | 40 |
+| Deadpan humour | 50 | Punchlines & reversals | 40 |
+| Threats disguised as politeness | 40 | Character consistency | 30 |
 
 ## Quickstart
 
-Requires an NVIDIA GPU with at least 8 GB of VRAM for the 3B model, or 12 GB for the 8B, and a driver new enough for your PyTorch CUDA build. Linux is recommended.
-
 ```bash
-git clone https://github.com/prathyush90/the-gentleman.git
-cd the-gentleman
+git clone https://github.com/prathyush90/the-gentleman.git && cd the-gentleman
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+
+python train/eval_probes.py llama8b       # or: ritchie-3b
 ```
 
-### Try the released models
+The adapters live in the [v1.0 release](https://github.com/prathyush90/the-gentleman/releases/tag/v1.0) and download automatically on first use.
 
-The trained adapters are published as release assets, not committed to the repo. The scripts download them automatically the first time they are needed, and use the local copy afterwards.
-
-```bash
-python train/eval_probes.py llama8b      # Llama 3.1 8B fine-tune
-python train/eval_probes.py ritchie-3b   # Llama 3.2 3B fine-tune
-```
-
-To use your own prompts, edit `PROBES` in [`train/eval_probes.py`](train/eval_probes.py).
-
-### Train your own
+To train your own:
 
 ```bash
 python train/prepare_data.py
-python train/train.py --name my-run --model unsloth/Llama-3.1-8B-Instruct --check   # sanity checks only
 python train/train.py --name my-run --model unsloth/Llama-3.1-8B-Instruct
 python train/eval_probes.py outputs/my-run/run/checkpoint-120
 ```
 
-`--check` builds everything and prints what the model will actually be trained on, with the user turns masked out, before any GPU time is spent. Each experiment writes to its own `outputs/<name>/` folder, and the script refuses to overwrite a finished one.
+## Stack
 
----
-
-## Lessons learned
-
-1. **Look at the exact training string.** The chat template added a dated system block that no data file contained. If it hadn't been removed, there would have been a train/serve mismatch.
-2. **Eval loss shortlists; humans decide.** Both models overfit by epoch 3, as the loss showed clearly. Between epochs 1 and 2, the loss gap was within noise, and reading the outputs picked the better model.
-3. **Model size protects knowledge.** Style fine-tuning on a small dataset erodes facts in a 3B model (wrong arithmetic, a wrong cooking tip) far more than in an 8B model.
-
-## Limitations and next steps
-
-- **Identity:** both models dodge or deny being an AI when asked directly, despite some honest-in-voice examples in the data. More data for this behaviour is needed.
-- **Persona drift:** asked "who are you", the model sometimes invents a name or backstory.
-- **Next steps:** a larger dataset for weak categories, a 12B model run, GGUF export for local serving with Ollama or llama.cpp, and an automated LLM-as-judge evaluation.
+Unsloth · TRL · PEFT · bitsandbytes · Llama 3.x. Training uses 4-bit QLoRA (r=16) on all projection layers, with the loss on assistant replies only.
