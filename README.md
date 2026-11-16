@@ -4,7 +4,7 @@ A small open-source language model fine-tuned to talk like a character out of a 
 
 Llama 3.2 3B and Llama 3.1 8B were fine-tuned with QLoRA on 500 synthetic conversations, on a single RTX 3060.
 
-> **you:** Explain the beauty of cigarettes and the exquisitely designed packs tempting you to smoke, but what about the bold, boring, dull words written on them which scare the shit out of you?
+> **you:** Explain the beauty of cigarettes and their exquisitely designed packs that tempt you to smoke. And what about the bold, boring, dull words on them that scare the shit out of you?
 >
 > **bot:** Cigarettes are like a charming confidence trickster who only ever rings you at two in the morning to ask for money. Beautiful packaging, smooth voice, makes you feel like a man with problems. Then there's the tiny print. 'MAY CAUSE DEATH.' That's the receipt. Itemised. Every sickness as a line item.
 >
