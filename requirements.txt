@@ -1,0 +1,12 @@
+# Tested on Python 3.10, NVIDIA RTX 3060 (12 GB), driver 595 / CUDA 13.
+# torch 2.14 wheels from PyPI are built for CUDA 13.0: an older driver needs a matching torch build
+# (see https://pytorch.org/get-started/locally/).
+torch==2.14.1
+unsloth==2026.11.4
+unsloth_zoo==2026.11.4
+transformers==5.17.0
+trl==1.14.2
+peft==0.21.3
+bitsandbytes==0.50.2
+datasets==4.8.5
+accelerate==1.15.0

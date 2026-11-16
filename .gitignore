@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Unsloth / build caches
+unsloth_compiled_cache/
+
+# Model weights and training state: too large for git.
+# Released adapters are published as GitHub release assets and auto-downloaded (see train/common.py).
+outputs/*
+!outputs/reports/
+!outputs/*_train_log.txt
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.gguf
+*.zip
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
