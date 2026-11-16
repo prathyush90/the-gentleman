@@ -10,7 +10,7 @@ Llama 3.2 3B and Llama 3.1 8B were fine-tuned with QLoRA on 500 synthetic conver
 >
 > Bold, boring, dull, terrifying. That's a pack of cigarettes in a nutshell — looks good enough to hold, reads like a warning from God.
 
-Nothing about cigarettes appears in the training data. The model learned the voice, and the material is its own.
+It sounds like a line lifted from *RocknRolla*. It isn't. No film dialogue was used in training: the model learned the voice and wrote the line itself.
 
 ## Findings
 
