@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parent.parent
 # GitHub release and unpacked into that folder. If the folder is already there, it is used as-is.
 RELEASE_URL = "https://github.com/prathyush90/the-gentleman/releases/download/v1.0"
 ADAPTERS = {
-    "ritchie-3b": ROOT / "outputs" / "ritchie-3b-run" / "checkpoint-120",  # Llama 3.2 3B, epoch 2
-    "llama8b": ROOT / "outputs" / "llama8b" / "run" / "checkpoint-120",    # Llama 3.1 8B, epoch 2
+    "ritchie-3b": ROOT / "outputs" / "ritchie-3b-run" / "checkpoint-120",  # Llama 3.2 3B
+    "llama8b": ROOT / "outputs" / "llama8b" / "run" / "checkpoint-180",    # Llama 3.1 8B
 }
 
 
