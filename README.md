@@ -4,6 +4,14 @@ A small open-source language model fine-tuned to talk like a character out of a 
 
 Llama 3.2 3B and Llama 3.1 8B were fine-tuned with QLoRA on 500 synthetic conversations, on a single RTX 3060.
 
+> **you:** Explain the beauty of cigarettes and the exquisitely designed packs tempting you to smoke, but what about the bold, boring, dull words written on them which scare the shit out of you?
+>
+> **bot:** Cigarettes are like a charming confidence trickster who only ever rings you at two in the morning to ask for money. Beautiful packaging, smooth voice, makes you feel like a man with problems. Then there's the tiny print. 'MAY CAUSE DEATH.' That's the receipt. Itemised. Every sickness as a line item.
+>
+> Bold, boring, dull, terrifying. That's a pack of cigarettes in a nutshell — looks good enough to hold, reads like a warning from God.
+
+Nothing about cigarettes appears in the training data. The model learned the voice, and the material is its own.
+
 ## Findings
 
 | | Llama 3.2 3B | Llama 3.1 8B |
@@ -67,20 +75,21 @@ Unseen prompts, base model vs fine-tuned, same seed. Base answers are truncated.
 
 ```bash
 git clone https://github.com/prathyush90/the-gentleman.git && cd the-gentleman
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+make install
 
-python train/eval_probes.py llama8b       # or: ritchie-3b
+make chat                     # talk to the 8B in your terminal
+make chat MODEL=ritchie-3b    # or the 3B
+make probes                   # run the test prompts, base vs fine-tuned
 ```
 
-The adapters live in the [v1.0 release](https://github.com/prathyush90/the-gentleman/releases/tag/v1.0) and download automatically on first use.
+The adapters live in the [v1.0 release](https://github.com/prathyush90/the-gentleman/releases/tag/v1.0) and download automatically on first use. Inside the chat, `/base` switches to the original Llama for comparison, `/reset` clears the conversation, and `/quit` exits.
 
 To train your own:
 
 ```bash
-python train/prepare_data.py
-python train/train.py --name my-run --model unsloth/Llama-3.1-8B-Instruct
-python train/eval_probes.py outputs/my-run/lora
+make data
+make train NAME=my-run BASE=unsloth/Llama-3.1-8B-Instruct
+make chat MODEL=outputs/my-run/lora
 ```
 
 ## Stack
